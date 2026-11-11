@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#2e7d32">
 <title>Строение и зоны корня растения</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 body{
   font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
   background:#f5f0eb;
@@ -47,7 +48,8 @@ body{
   position:relative;overflow:hidden;cursor:grab;
 }
 #canvas-container:active{cursor:grabbing}
-#canvas-container canvas{display:block;width:100%!important;height:100%!important}
+#gl-wrap{position:absolute;inset:0}
+#gl-wrap canvas{position:absolute;top:0;left:0;display:block;width:100%!important;height:100%!important;touch-action:none;-webkit-tap-highlight-color:transparent;outline:none}
 
 #tooltip{
   position:absolute;
@@ -240,6 +242,15 @@ body{
 .zone-html-label.hl-cap{background:linear-gradient(135deg,#2e7d32,#1b5e20)}
 .zone-html-label.hl-cap.active{box-shadow:0 0 22px rgba(46,125,50,.95), 0 4px 16px rgba(0,0,0,.3)}
 
+.hint-touch{display:none}
+@media (pointer:coarse){.hint-mouse{display:none}.hint-touch{display:block}}
+.ctrl-btn,.mode-btn,.zone-html-label,.btn-check{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+@media (hover:none){
+  .zone-html-label:hover:not(.active){transform:none;opacity:.85;box-shadow:0 3px 12px rgba(0,0,0,.18)}
+  .ctrl-btn:hover{transform:none}
+}
+
+/* Планшеты */
 @media(max-width:1000px){
   .viewer-section{flex-direction:column;min-height:auto}
   .info-panel{width:100%;max-height:none}
@@ -247,14 +258,47 @@ body{
   .zone-html-labels{width:150px;right:12px;top:60px;bottom:20px}
   .zone-html-label{font-size:.72rem;padding:7px 10px}
 }
-@media(max-width:600px){
-  .site-header{padding:24px 16px 18px}
-  .mode-toggle{flex-direction:column;gap:4px}
-  .mode-btn{padding:8px 12px;font-size:.75rem}
-  .controls-overlay{top:auto;bottom:16px;left:16px;flex-direction:row}
-  .ctrl-btn{padding:8px 12px;font-size:.75rem}
-  .zone-html-labels{width:125px;right:6px;top:55px;bottom:15px}
-  .zone-html-label{font-size:.64rem;padding:5px 8px;gap:6px}
+/* Телефон в горизонтальном положении */
+@media(max-height:520px) and (orientation:landscape){
+  #canvas-container{min-height:0;height:calc(100vh - 20px);height:calc(100svh - 20px)}
+  .viewer-section{margin:10px auto}
+  .site-header{padding:12px}
+}
+/* Телефон (вертикально) */
+@media(max-width:700px){
+  .site-header{padding:14px 12px 12px}
+  .site-header h1{font-size:1.05rem;letter-spacing:.5px;line-height:1.25;margin-bottom:4px}
+  .site-header p{font-size:.78rem}
+  .viewer-section{margin:10px auto 16px;padding:0 8px;gap:10px;min-height:0}
+  #canvas-container{
+    position:sticky;top:6px;z-index:40;
+    flex:none;display:flex;flex-direction:column;
+    height:60vh;height:60svh;min-height:400px;max-height:600px;
+    border-radius:14px;
+  }
+  #gl-wrap{position:relative;inset:auto;flex:1 1 auto;min-height:0;order:2}
+  .mode-toggle{position:static;order:0;gap:6px;padding:8px 8px 6px}
+  .mode-btn{flex:1 1 0;padding:8px 2px;font-size:.7rem;min-height:40px;line-height:1.15;border-radius:9px}
+  .mode-btn .more{display:none}
+  .zone-html-labels{position:static;order:1;width:auto;display:flex;flex-direction:row;flex-wrap:wrap;justify-content:center;gap:5px;padding:0 8px 6px;pointer-events:auto}
+  .zone-html-label{font-size:.66rem;padding:6px 8px;gap:5px;border-radius:9px;opacity:.92}
+  .zone-html-label::before{width:6px;height:6px}
+  .zone-html-label.active{transform:scale(1.04)}
+  .controls-overlay{top:auto;bottom:10px;left:10px;flex-direction:column;gap:8px}
+  .ctrl-btn{width:42px;height:42px;padding:0;border-radius:50%;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
+  .ctrl-btn .lbl{display:none}
+  .info-panel{padding:18px;border-radius:14px}
+  .info-panel h2{font-size:1.1rem}
+  .lab-section{margin:30px auto}
+  .lab-section h2{margin-bottom:18px}
+  .lab-card{padding:18px;border-radius:14px;margin-bottom:14px}
+  .lab-card h3{font-size:1.02rem}
+  .lab-card ul,.lab-card ol{padding-left:20px}
+  .quiz-section{margin:24px auto 40px}
+  .quiz-section h2{font-size:1.25rem}
+  .quiz-card{padding:16px 14px}
+  .quiz-card label{padding:11px 10px;font-size:.92rem}
+  .btn-check{width:100%;padding:14px}
 }
 </style>
 </head>
@@ -267,18 +311,19 @@ body{
 
 <section class="viewer-section" id="viewer-section">
   <div id="canvas-container">
+    <div id="gl-wrap"></div>
     <div id="tooltip"></div>
     <div id="fx"></div>
     <div class="controls-overlay">
-      <button class="ctrl-btn" id="btn-dive">🔍 Приблизить корень</button>
-      <button class="ctrl-btn" id="btn-back" style="display:none">🌸 К растению</button>
-      <button class="ctrl-btn" id="btn-reset" title="Сбросить вид">⟲ Сбросить вид</button>
-      <button class="ctrl-btn" id="btn-auto" title="Авто-вращение">↻ Авто-вращение</button>
+      <button class="ctrl-btn" id="btn-dive" aria-label="Приблизить корень">🔍<span class="lbl"> Приблизить корень</span></button>
+      <button class="ctrl-btn" id="btn-back" aria-label="К растению" style="display:none">🌸<span class="lbl"> К растению</span></button>
+      <button class="ctrl-btn" id="btn-reset" title="Сбросить вид" aria-label="Сбросить вид">⟲<span class="lbl"> Сбросить вид</span></button>
+      <button class="ctrl-btn" id="btn-auto" title="Авто-вращение" aria-label="Авто-вращение">↻<span class="lbl"> Авто-вращение</span></button>
     </div>
     <div class="mode-toggle">
       <button class="mode-btn active" id="mode-plant">🌸 Растение</button>
-      <button class="mode-btn" id="mode-outer">🌱 Внешнее строение</button>
-      <button class="mode-btn" id="mode-inner">🔬 Внутреннее строение</button>
+      <button class="mode-btn" id="mode-outer">🌱 Внешнее<span class="more"> строение</span></button>
+      <button class="mode-btn" id="mode-inner">🔬 Внутреннее<span class="more"> строение</span></button>
     </div>
     <!-- HTML labels for zones, positioned on right side of canvas -->
     <div class="zone-html-labels" id="zone-labels-container">
@@ -293,10 +338,12 @@ body{
     <div class="info-default" id="info-default">
       <span class="icon-big">🌱</span>
       <h3>Исследуйте корень</h3>
-      <p>Нажмите на любую зону корня или на подпись справа, чтобы узнать подробнее.</p>
-      <p>Вращайте модель мышкой, приближайте колёсиком.</p>
+      <p>Нажмите на любую зону корня или на её подпись, чтобы узнать подробнее.</p>
+      <p class="hint-mouse">Вращайте модель мышкой, приближайте колёсиком.</p>
+      <p class="hint-touch">Вращайте модель пальцем, масштабируйте щипком.</p>
       <br>
-      <p style="color:#aaa;font-size:.78rem">🖱 ЛКМ — вращение<br>🖱 Колёсико — масштаб<br>🖱 ПКМ — перемещение</p>
+      <p class="hint-mouse" style="color:#aaa;font-size:.78rem">🖱 ЛКМ — вращение<br>🖱 Колёсико — масштаб<br>🖱 ПКМ — перемещение</p>
+      <p class="hint-touch" style="color:#aaa;font-size:.78rem">👆 Один палец — вращение<br>🤏 Щипок — масштаб<br>✌ Два пальца — перемещение</p>
     </div>
     <div id="info-content" style="display:none"></div>
   </div>
@@ -472,7 +519,8 @@ const ZONE_DATA = {
 /* ============ THREE.JS SETUP ============ */
 const container = document.getElementById('canvas-container');
 const tooltip = document.getElementById('tooltip');
-let W = container.clientWidth, H = container.clientHeight;
+const glWrap = document.getElementById('gl-wrap');
+let W = glWrap.clientWidth || 300, H = glWrap.clientHeight || 300;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xf7f5f0);
@@ -486,7 +534,7 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.setSize(W, H);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-container.appendChild(renderer.domElement);
+glWrap.appendChild(renderer.domElement);
 
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -959,7 +1007,7 @@ function showDefaultInfo() {
     infoDefault.querySelector('p').textContent = 'Нажмите на ксилему, флоэму или камбий для подробностей.';
   } else {
     infoDefault.querySelector('h3').textContent = 'Исследуйте корень';
-    infoDefault.querySelector('p').textContent = 'Нажмите на любую зону корня или на подпись справа, чтобы узнать подробнее.';
+    infoDefault.querySelector('p').textContent = 'Нажмите на любую зону корня или на её подпись, чтобы узнать подробнее.';
   }
 }
 
@@ -1011,8 +1059,17 @@ renderer.domElement.addEventListener('mousemove', e => {
   }
 });
 
-renderer.domElement.addEventListener('click', e => {
-  if (e.target.closest('.controls-overlay') || e.target.closest('.mode-toggle') || e.target.closest('.zone-html-labels')) return;
+/* Тап пальцем: определяем сами, т.к. OrbitControls может гасить синтетический click на touch-экранах */
+let lastTap = 0, downPt = null;
+renderer.domElement.addEventListener('pointerdown', e => { downPt = {x:e.clientX, y:e.clientY, t:performance.now()}; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (e.pointerType === 'mouse' || !downPt) return;
+  const moved = Math.hypot(e.clientX-downPt.x, e.clientY-downPt.y), dt = performance.now()-downPt.t;
+  downPt = null;
+  if (moved < 10 && dt < 600) { lastTap = performance.now(); handleSelect(e); }
+});
+renderer.domElement.addEventListener('click', e => { if (performance.now()-lastTap < 700) return; handleSelect(e); });
+function handleSelect(e) {
   const zone = getHitZone(e);
   if (zone && currentMode === 'plant') {
     if (zone === 'rootorgan') diveToRoot(); else showZoneInfo(zone);
@@ -1024,7 +1081,7 @@ renderer.domElement.addEventListener('click', e => {
   } else if (!crossGroup.visible) {
     highlightZone(null);
   }
-});
+}
 
 /* ---- HTML label clicks ---- */
 document.querySelectorAll('.zone-html-label').forEach(el => {
@@ -1036,7 +1093,21 @@ document.querySelectorAll('.zone-html-label').forEach(el => {
 
 /* ============ MODE SWITCH ============ */
 let currentMode = 'plant';
-const VIEWS = {plant:{p:[0,1.6,11],t:[0,1.1,0]}, outer:{p:[0,2,14],t:[0,2,0]}, inner:{p:[0,6,6],t:[0,0,0]}};
+const BASE_VIEWS = {plant:{p:[0,1.6,11],t:[0,1.1,0]}, outer:{p:[0,2,14],t:[0,2,0]}, inner:{p:[0,6,6],t:[0,0,0]}};
+const VIEW_EXT = {plant:{w:3.3,h:3.9}, outer:{w:2.7,h:7.2}, inner:{w:4.4,h:3.4}};
+let lastFitAspect = camera.aspect;
+/* На узких (портретных) экранах отодвигаем камеру, чтобы модель целиком помещалась */
+function viewFor(m) {
+  const b = BASE_VIEWS[m], p = new THREE.Vector3(...b.p), t = new THREE.Vector3(...b.t);
+  const th = Math.tan(camera.fov*Math.PI/360), d0 = p.distanceTo(t);
+  let d = d0;
+  if (camera.aspect < 1) { const e = VIEW_EXT[m]; d = Math.max(d0, e.w/(th*camera.aspect), e.h/th); }
+  const q = t.clone().add(p.sub(t).multiplyScalar(d/d0));
+  controls.maxDistance = Math.max(22, d*1.35);
+  scene.fog.near = Math.max(20, d + 8); scene.fog.far = scene.fog.near + 20;
+  lastFitAspect = camera.aspect;
+  return {p:[q.x,q.y,q.z], t:b.t};
+}
 const modeBtns = {plant:document.getElementById('mode-plant'), outer:document.getElementById('mode-outer'), inner:document.getElementById('mode-inner')};
 const labelsContainer = document.getElementById('zone-labels-container');
 const btnDive = document.getElementById('btn-dive'), btnBack = document.getElementById('btn-back'), fx = document.getElementById('fx');
@@ -1049,7 +1120,7 @@ function setMode(m, anim) {
   labelsContainer.style.display = m === 'outer' ? '' : 'none';
   btnDive.style.display = m === 'plant' ? '' : 'none';
   btnBack.style.display = m === 'plant' ? 'none' : '';
-  const v = VIEWS[m];
+  const v = viewFor(m);
   controls.target.set(...v.t);
   highlightZone(null);
   if (anim) animCam(...v.p); else camera.position.set(...v.p);
@@ -1081,7 +1152,7 @@ function diveToRoot() {
     if (p < 1) { requestAnimationFrame(step); return; }
     setMode('outer', false);
     camera.position.set(0,1,6);
-    fx.style.opacity = 0; animCam(0,2,14); busy = false;
+    fx.style.opacity = 0; animCam(...viewFor('outer').p); busy = false;
   })(t0);
 }
 function backToPlant() {
@@ -1102,7 +1173,7 @@ btnBack.addEventListener('click', backToPlant);
 
 /* ============ CONTROLS ============ */
 document.getElementById('btn-reset').addEventListener('click', () => {
-  const v = VIEWS[currentMode]; animCam(...v.p); controls.target.set(...v.t);
+  const v = viewFor(currentMode); animCam(...v.p); controls.target.set(...v.t);
   highlightZone(null);
 });
 const btnAuto = document.getElementById('btn-auto');
@@ -1156,11 +1227,17 @@ animate();
 
 /* ============ RESIZE ============ */
 function onResize(){
-  W = container.clientWidth; H = container.clientHeight;
+  W = glWrap.clientWidth; H = glWrap.clientHeight;
+  if (!W || !H) return;
   camera.aspect = W/H; camera.updateProjectionMatrix();
   renderer.setSize(W, H);
+  /* при смене ориентации заново подбираем вид */
+  if (!busy && Math.abs(camera.aspect - lastFitAspect) > 0.25) {
+    const v = viewFor(currentMode); camera.position.set(...v.p); controls.target.set(...v.t);
+  }
 }
 window.addEventListener('resize', onResize);
+if (window.ResizeObserver) new ResizeObserver(onResize).observe(glWrap);
 setTimeout(onResize, 100);
 
 })();
