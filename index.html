@@ -180,34 +180,71 @@ body{
 
 /* HTML Labels next to canvas */
 .zone-html-labels{
-  position:absolute;right:20px;top:0;bottom:0;
-  width:180px;pointer-events:none;z-index:15;
+  position:absolute;right:22px;top:70px;bottom:30px;
+  width:205px;pointer-events:none;z-index:15;
   display:flex;flex-direction:column;
-  justify-content:center;gap:0;
+  justify-content:space-evenly;
 }
 .zone-html-label{
-  padding:6px 14px;
-  border-radius:8px;font-size:.78rem;font-weight:700;
-  color:#fff;letter-spacing:.3px;text-align:center;
-  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  padding:10px 16px;
+  border-radius:12px;font-size:.82rem;font-weight:700;
+  color:#fff;letter-spacing:.3px;text-align:left;
+  box-shadow:0 3px 12px rgba(0,0,0,.18);
   pointer-events:auto;cursor:pointer;
-  transition:all .25s;
-  opacity:.9;
-  margin:3px 0;
+  transition:all .28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  opacity:.85;
+  position:relative;
+  display:flex;align-items:center;gap:10px;
+  border:2px solid transparent;
+  user-select:none;
 }
-.zone-html-label:hover{transform:scale(1.05);opacity:1}
-.zone-html-label.hl-conduction{background:#6d4c41}
-.zone-html-label.hl-absorption{background:#8d6e63}
-.zone-html-label.hl-growth{background:#9e9d24}
-.zone-html-label.hl-division{background:#558b2f}
-.zone-html-label.hl-cap{background:#33691e}
+.zone-html-label::before{
+  content:'';
+  width:9px;height:9px;
+  border-radius:50%;
+  background:#fff;
+  display:inline-block;
+  opacity:0.6;
+  flex-shrink:0;
+  transition:all .25s;
+}
+.zone-html-label:hover{
+  transform:scale(1.06) translateX(-6px);
+  opacity:1;
+  box-shadow:0 6px 20px rgba(0,0,0,.25);
+}
+.zone-html-label.active{
+  transform:scale(1.1) translateX(-12px);
+  opacity:1;
+  border-color:#fff;
+}
+.zone-html-label.active::before{
+  opacity:1;
+  box-shadow:0 0 10px #fff;
+  transform:scale(1.3);
+}
+.zone-html-label.hl-conduction{background:linear-gradient(135deg,#795548,#5d4037)}
+.zone-html-label.hl-conduction.active{box-shadow:0 0 22px rgba(121,85,72,.95), 0 4px 16px rgba(0,0,0,.3)}
+
+.zone-html-label.hl-absorption{background:linear-gradient(135deg,#8d6e63,#6d4c41)}
+.zone-html-label.hl-absorption.active{box-shadow:0 0 22px rgba(141,110,99,.95), 0 4px 16px rgba(0,0,0,.3)}
+
+.zone-html-label.hl-growth{background:linear-gradient(135deg,#c0ca33,#afb42b);color:#2e3a00}
+.zone-html-label.hl-growth::before{background:#2e3a00}
+.zone-html-label.hl-growth.active{box-shadow:0 0 22px rgba(192,202,51,.95), 0 4px 16px rgba(0,0,0,.3);border-color:#2e3a00}
+
+.zone-html-label.hl-division{background:linear-gradient(135deg,#689f38,#558b2f)}
+.zone-html-label.hl-division.active{box-shadow:0 0 22px rgba(104,159,56,.95), 0 4px 16px rgba(0,0,0,.3)}
+
+.zone-html-label.hl-cap{background:linear-gradient(135deg,#2e7d32,#1b5e20)}
+.zone-html-label.hl-cap.active{box-shadow:0 0 22px rgba(46,125,50,.95), 0 4px 16px rgba(0,0,0,.3)}
 
 @media(max-width:1000px){
   .viewer-section{flex-direction:column;min-height:auto}
   .info-panel{width:100%;max-height:none}
   #canvas-container{min-height:500px}
-  .zone-html-labels{width:140px;right:10px}
-  .zone-html-label{font-size:.7rem;padding:5px 10px}
+  .zone-html-labels{width:150px;right:12px;top:60px;bottom:20px}
+  .zone-html-label{font-size:.72rem;padding:7px 10px}
 }
 @media(max-width:600px){
   .site-header{padding:24px 16px 18px}
@@ -215,8 +252,8 @@ body{
   .mode-btn{padding:8px 12px;font-size:.75rem}
   .controls-overlay{top:auto;bottom:16px;left:16px;flex-direction:row}
   .ctrl-btn{padding:8px 12px;font-size:.75rem}
-  .zone-html-labels{width:110px;right:5px}
-  .zone-html-label{font-size:.62rem;padding:4px 6px}
+  .zone-html-labels{width:125px;right:6px;top:55px;bottom:15px}
+  .zone-html-label{font-size:.64rem;padding:5px 8px;gap:6px}
 }
 </style>
 </head>
@@ -419,7 +456,7 @@ scene.background = new THREE.Color(0xf7f5f0);
 scene.fog = new THREE.Fog(0xf7f5f0, 20, 40);
 
 const camera = new THREE.PerspectiveCamera(38, W/H, 0.1, 100);
-camera.position.set(0, 3, 12);
+camera.position.set(0, 2.0, 14.0);
 
 const renderer = new THREE.WebGLRenderer({antialias:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
@@ -433,7 +470,7 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 5;
 controls.maxDistance = 22;
-controls.target.set(0, 2, 0);
+controls.target.set(0, 2.0, 0);
 controls.autoRotate = false;
 controls.autoRotateSpeed = 1.5;
 
@@ -448,12 +485,13 @@ scene.add(new THREE.HemisphereLight(0xaed581, 0x795548, 0.3));
 
 /* ============ ROOT MODEL ============ */
 const rootGroup = new THREE.Group();
+rootGroup.position.y = -1.2;
 scene.add(rootGroup);
 
 // Zone boundaries: y from -2 (tip) to 9 (top)
 // More conical/tapered shape. Wide at top, narrow at bottom, pointed tip.
 const ZONES = {
-  cap:        {yMin: -2.0, yMax: -1.2, color: 0x33691e},
+  cap:        {yMin: -3.0, yMax: -1.2, color: 0x33691e},
   division:   {yMin: -1.2, yMax:  0.5, color: 0x689f38},
   growth:     {yMin:  0.5, yMax:  2.8, color: 0xcdba3a},
   absorption: {yMin:  2.8, yMax:  6.0, color: 0xbcaaa4},
@@ -461,21 +499,31 @@ const ZONES = {
 };
 
 function getRadiusAtY(wy) {
-  // Strongly tapered conical shape — wide at top, narrow at bottom, pointed tip
-  if (wy < -1.7) {
-    // Tip: very rounded, like a paraboloid
-    const t = (wy - (-2.0)) / 0.3; // 0 at -2, 1 at -1.7
-    return 0.15 + 0.35 * Math.pow(Math.max(0, t), 0.5);
+  // Strongly tapered conical shape — wide at top, narrow at bottom, sharp elongated tip
+  if (wy < -2.6) {
+    // Very tip: sharp elongated point
+    const t = (wy - (-3.0)) / 0.4;
+    return 0.02 + 0.06 * Math.pow(Math.max(0, t), 1.8);
+  }
+  if (wy < -2.1) {
+    // Mid tip: still narrow
+    const t = (wy + 2.6) / 0.5;
+    return 0.08 + 0.18 * Math.pow(t, 0.8);
+  }
+  if (wy < -1.5) {
+    // Cap widening
+    const t = (wy + 2.1) / 0.6;
+    return 0.26 + t * 0.22;
   }
   if (wy < -1.2) {
-    // Cap body
-    const t = (wy + 1.7) / 0.5;
-    return 0.5 + t * 0.15;
+    // Cap upper part
+    const t = (wy + 1.5) / 0.3;
+    return 0.48 + t * 0.16;
   }
   if (wy < 0.5) {
-    // Division zone — small
+    // Division zone
     const t = (wy + 1.2) / 1.7;
-    return 0.65 + t * 0.12;
+    return 0.64 + t * 0.14;
   }
   if (wy < 2.8) {
     // Growth — widening
@@ -667,43 +715,64 @@ Object.entries(ZONES).forEach(([k,v]) => makeHitZone(k,v));
 
 /* Highlight overlay ring */
 const hlRing = new THREE.Mesh(
-  new THREE.TorusGeometry(1.3, 0.025, 8, 48),
+  new THREE.TorusGeometry(1.3, 0.03, 8, 48),
   new THREE.MeshBasicMaterial({color:0x4caf50, transparent:true, opacity:0})
 );
 hlRing.rotation.x = Math.PI/2;
 rootGroup.add(hlRing);
+
+const hlRing2 = new THREE.Mesh(
+  new THREE.TorusGeometry(1.3, 0.03, 8, 48),
+  new THREE.MeshBasicMaterial({color:0x4caf50, transparent:true, opacity:0})
+);
+hlRing2.rotation.x = Math.PI/2;
+rootGroup.add(hlRing2);
 
 let selectedZone = null;
 
 function highlightZone(key) {
   // Reset all
   zoneMeshes.forEach(m => { m.material.opacity = 0; });
-  document.querySelectorAll('.zone-html-label').forEach(el => el.style.outline='none');
+  document.querySelectorAll('.zone-html-label').forEach(el => el.classList.remove('active'));
 
   if (!key) {
     hlRing.material.opacity = 0;
+    hlRing2.material.opacity = 0;
     selectedZone = null;
     showDefaultInfo();
     return;
   }
   selectedZone = key;
   const z = ZONES[key];
-  // Glow overlay
+  const zoneColor = new THREE.Color(z.color).multiplyScalar(1.5);
+
+  // Bright glow overlay on the zone
   zoneMeshes.forEach(m => {
     if (m.userData.zone === key) {
-      m.material.color.set(0x66bb6a);
-      m.material.opacity = 0.13;
+      m.material.color.copy(zoneColor);
+      m.material.opacity = 0.35;
     }
   });
-  hlRing.position.y = z.yMin;
-  const r = getRadiusAtY(z.yMin) + 0.08;
-  hlRing.geometry.dispose();
-  hlRing.geometry = new THREE.TorusGeometry(r, 0.025, 8, 48);
-  hlRing.material.opacity = 0.8;
 
-  // Highlight HTML label
+  // Bottom ring
+  const rBot = getRadiusAtY(z.yMin + 0.05) + 0.06;
+  hlRing.geometry.dispose();
+  hlRing.geometry = new THREE.TorusGeometry(rBot, 0.035, 8, 48);
+  hlRing.position.y = z.yMin;
+  hlRing.material.color.copy(zoneColor);
+  hlRing.material.opacity = 0.95;
+
+  // Top ring
+  const rTop = getRadiusAtY(z.yMax - 0.05) + 0.06;
+  hlRing2.geometry.dispose();
+  hlRing2.geometry = new THREE.TorusGeometry(rTop, 0.035, 8, 48);
+  hlRing2.position.y = z.yMax;
+  hlRing2.material.color.copy(zoneColor);
+  hlRing2.material.opacity = 0.95;
+
+  // Highlight HTML label on the side
   const lbl = document.querySelector(`.zone-html-label[data-zone="${key}"]`);
-  if (lbl) lbl.style.outline = '3px solid #4caf50';
+  if (lbl) lbl.classList.add('active');
 
   showZoneInfo(key);
 }
@@ -915,9 +984,9 @@ modeOuter.addEventListener('click', () => {
   modeOuter.classList.add('active'); modeInner.classList.remove('active');
   crossGroup.visible = false; rootGroup.visible = true;
   labelsContainer.style.display = '';
-  controls.target.set(0, 2, 0);
+  controls.target.set(0, 2.0, 0);
   highlightZone(null);
-  animCam(0, 3, 12);
+  animCam(0, 2.0, 14.0);
 });
 
 modeInner.addEventListener('click', () => {
@@ -945,7 +1014,7 @@ function animCam(x,y,z) {
 
 /* ============ CONTROLS ============ */
 document.getElementById('btn-reset').addEventListener('click', () => {
-  if (currentMode === 'outer') { animCam(0,3,12); controls.target.set(0,2,0); }
+  if (currentMode === 'outer') { animCam(0,2.0,14.0); controls.target.set(0,2.0,0); }
   else { animCam(0,6,6); controls.target.set(0,0,0); }
   highlightZone(null);
 });
@@ -978,7 +1047,13 @@ function animate() {
   requestAnimationFrame(animate);
   controls.update();
   if (selectedZone) {
-    hlRing.material.opacity = 0.45 + 0.35 * Math.sin(performance.now()*0.004);
+    const pulse = 0.6 + 0.35 * Math.sin(performance.now() * 0.005);
+    hlRing.material.opacity = pulse;
+    hlRing2.material.opacity = pulse;
+    const activeMesh = zoneMeshes.find(m => m.userData.zone === selectedZone);
+    if (activeMesh) {
+      activeMesh.material.opacity = 0.22 + 0.14 * Math.sin(performance.now() * 0.005);
+    }
   }
   renderer.render(scene, camera);
 }
