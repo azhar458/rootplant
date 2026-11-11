@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Строение и зоны корня растения</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  background:#f5f0eb;
+  color:#333;
+  line-height:1.6;
+  overflow-x:hidden;
+}
+
+/* HEADER */
+.site-header{
+  background:linear-gradient(135deg,#2e7d32,#4caf50,#66bb6a);
+  color:#fff;
+  text-align:center;
+  padding:36px 20px 26px;
+  box-shadow:0 4px 20px rgba(0,0,0,.15);
+  position:relative;z-index:10;
+}
+.site-header h1{
+  font-size:clamp(1.3rem,3.5vw,2.2rem);
+  letter-spacing:2px;margin-bottom:6px;
+  text-shadow:0 2px 4px rgba(0,0,0,.2);
+}
+.site-header p{font-size:clamp(.82rem,2vw,1.05rem);opacity:.92;font-weight:300}
+
+/* VIEWER */
+.viewer-section{
+  position:relative;width:100%;max-width:1400px;
+  margin:30px auto;padding:0 20px;
+  display:flex;gap:20px;min-height:700px;
+}
+#canvas-container{
+  flex:1;min-height:600px;
+  background:linear-gradient(180deg,#f7f5f0 0%,#eee8df 100%);
+  border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+  position:relative;overflow:hidden;cursor:grab;
+}
+#canvas-container:active{cursor:grabbing}
+#canvas-container canvas{display:block;width:100%!important;height:100%!important}
+
+#tooltip{
+  position:absolute;
+  background:rgba(30,30,30,.88);color:#fff;
+  padding:8px 16px;border-radius:8px;font-size:.85rem;
+  pointer-events:none;opacity:0;transition:opacity .2s;
+  white-space:nowrap;z-index:50;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);
+  backdrop-filter:blur(4px);
+}
+
+.controls-overlay{
+  position:absolute;top:16px;left:16px;
+  display:flex;flex-direction:column;gap:8px;z-index:20;
+}
+.ctrl-btn{
+  background:rgba(255,255,255,.95);border:none;border-radius:10px;
+  padding:10px 16px;font-size:.82rem;cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);transition:all .2s;
+  color:#333;font-weight:500;
+}
+.ctrl-btn:hover{background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15);transform:translateY(-1px)}
+.ctrl-btn.active{background:#2e7d32;color:#fff}
+
+.mode-toggle{
+  position:absolute;top:16px;right:16px;z-index:20;
+  display:flex;gap:6px;
+}
+.mode-btn{
+  background:rgba(255,255,255,.95);border:2px solid transparent;
+  border-radius:10px;padding:10px 18px;font-size:.82rem;
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.1);
+  transition:all .25s;color:#555;font-weight:600;
+}
+.mode-btn:hover{border-color:#4caf50}
+.mode-btn.active{background:#2e7d32;color:#fff;border-color:#2e7d32}
+
+/* INFO PANEL */
+.info-panel{
+  width:360px;min-width:300px;
+  background:#fff;border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.08);
+  padding:28px;overflow-y:auto;max-height:700px;
+}
+.info-panel h2{
+  color:#2e7d32;font-size:1.25rem;margin-bottom:12px;
+  padding-bottom:10px;border-bottom:3px solid #e8f5e9;
+}
+.info-panel .zone-icon{
+  width:48px;height:48px;border-radius:12px;
+  margin-bottom:12px;display:flex;align-items:center;
+  justify-content:center;font-size:1.5rem;
+}
+.info-panel p{font-size:.9rem;color:#555;margin-bottom:10px}
+.info-panel .func-label{
+  display:inline-block;background:#e8f5e9;color:#2e7d32;
+  padding:4px 12px;border-radius:20px;font-size:.8rem;
+  font-weight:600;margin-bottom:8px;
+}
+.info-panel .detail-list{list-style:none;padding:0}
+.info-panel .detail-list li{
+  padding:8px 0;border-bottom:1px solid #f0f0f0;
+  font-size:.86rem;color:#666;
+}
+.info-panel .detail-list li::before{content:'🌿';margin-right:8px}
+.info-default{text-align:center;padding-top:40px}
+.info-default .icon-big{font-size:3rem;margin-bottom:16px;display:block}
+.info-default h3{color:#2e7d32;margin-bottom:10px;font-size:1.1rem}
+.info-default p{color:#888;font-size:.86rem}
+
+/* LAB */
+.lab-section{max-width:1100px;margin:50px auto;padding:0 20px}
+.lab-section h2{
+  text-align:center;color:#2e7d32;
+  font-size:clamp(1.2rem,3vw,1.8rem);margin-bottom:30px;
+}
+.lab-card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,.06);
+  padding:32px;margin-bottom:24px;
+}
+.lab-card h3{
+  color:#33691e;margin-bottom:14px;font-size:1.15rem;
+  display:flex;align-items:center;gap:10px;
+}
+.lab-card h3 .num{
+  background:#e8f5e9;color:#2e7d32;
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;flex-shrink:0;
+}
+.lab-card p,.lab-card li{font-size:.92rem;color:#555;line-height:1.7}
+.lab-card ul,.lab-card ol{padding-left:24px;margin-top:8px}
+.lab-card li{margin-bottom:6px}
+
+/* QUIZ */
+.quiz-section{max-width:800px;margin:40px auto 60px;padding:0 20px}
+.quiz-section h2{text-align:center;color:#2e7d32;margin-bottom:24px;font-size:1.5rem}
+.quiz-card{
+  background:#fff;border-radius:16px;
+  box-shadow:0 4px 20px rgba(0,0,0,.06);
+  padding:24px 28px;margin-bottom:16px;transition:all .3s;
+}
+.quiz-card.correct{border-left:4px solid #4caf50;background:#f1f8e9}
+.quiz-card.wrong{border-left:4px solid #ef5350;background:#ffebee}
+.quiz-card h4{font-size:.95rem;color:#333;margin-bottom:12px}
+.quiz-card label{
+  display:block;padding:8px 14px;margin:4px 0;
+  border-radius:8px;cursor:pointer;font-size:.88rem;
+  transition:background .2s;color:#555;
+}
+.quiz-card label:hover{background:#f5f5f5}
+.quiz-card input[type=radio]{margin-right:10px;accent-color:#2e7d32}
+.quiz-result{text-align:center;margin-top:20px}
+.quiz-result p{font-size:1.1rem;font-weight:600;color:#2e7d32}
+.btn-check{
+  display:block;margin:24px auto 0;
+  background:linear-gradient(135deg,#2e7d32,#4caf50);
+  color:#fff;border:none;border-radius:12px;
+  padding:14px 40px;font-size:1rem;cursor:pointer;
+  font-weight:600;box-shadow:0 4px 12px rgba(46,125,50,.3);
+  transition:all .25s;
+}
+.btn-check:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(46,125,50,.4)}
+
+.site-footer{
+  background:#2e7d32;color:rgba(255,255,255,.8);
+  text-align:center;padding:20px;font-size:.82rem;
+}
+
+/* HTML Labels next to canvas */
+.zone-html-labels{
+  position:absolute;right:20px;top:0;bottom:0;
+  width:180px;pointer-events:none;z-index:15;
+  display:flex;flex-direction:column;
+  justify-content:center;gap:0;
+}
+.zone-html-label{
+  padding:6px 14px;
+  border-radius:8px;font-size:.78rem;font-weight:700;
+  color:#fff;letter-spacing:.3px;text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+  pointer-events:auto;cursor:pointer;
+  transition:all .25s;
+  opacity:.9;
+  margin:3px 0;
+}
+.zone-html-label:hover{transform:scale(1.05);opacity:1}
+.zone-html-label.hl-conduction{background:#6d4c41}
+.zone-html-label.hl-absorption{background:#8d6e63}
+.zone-html-label.hl-growth{background:#9e9d24}
+.zone-html-label.hl-division{background:#558b2f}
+.zone-html-label.hl-cap{background:#33691e}
+
+@media(max-width:1000px){
+  .viewer-section{flex-direction:column;min-height:auto}
+  .info-panel{width:100%;max-height:none}
+  #canvas-container{min-height:500px}
+  .zone-html-labels{width:140px;right:10px}
+  .zone-html-label{font-size:.7rem;padding:5px 10px}
+}
+@media(max-width:600px){
+  .site-header{padding:24px 16px 18px}
+  .mode-toggle{flex-direction:column;gap:4px}
+  .mode-btn{padding:8px 12px;font-size:.75rem}
+  .controls-overlay{top:auto;bottom:16px;left:16px;flex-direction:row}
+  .ctrl-btn{padding:8px 12px;font-size:.75rem}
+  .zone-html-labels{width:110px;right:5px}
+  .zone-html-label{font-size:.62rem;padding:4px 6px}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>СТРОЕНИЕ И ЗОНЫ КОРНЯ РАСТЕНИЯ</h1>
+  <p>Интерактивная виртуальная лаборатория по биологии</p>
+</header>
+
+<section class="viewer-section" id="viewer-section">
+  <div id="canvas-container">
+    <div id="tooltip"></div>
+    <div class="controls-overlay">
+      <button class="ctrl-btn" id="btn-reset" title="Сбросить вид">⟲ Сбросить вид</button>
+      <button class="ctrl-btn" id="btn-auto" title="Авто-вращение">↻ Авто-вращение</button>
+    </div>
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-outer">🌱 Внешнее строение</button>
+      <button class="mode-btn" id="mode-inner">🔬 Внутреннее строение</button>
+    </div>
+    <!-- HTML labels for zones, positioned on right side of canvas -->
+    <div class="zone-html-labels" id="zone-labels-container">
+      <div class="zone-html-label hl-conduction" data-zone="conduction">Зона проведения</div>
+      <div class="zone-html-label hl-absorption" data-zone="absorption">Зона всасывания</div>
+      <div class="zone-html-label hl-growth" data-zone="growth">Зона роста</div>
+      <div class="zone-html-label hl-division" data-zone="division">Зона деления</div>
+      <div class="zone-html-label hl-cap" data-zone="cap">Корневой чехлик</div>
+    </div>
+  </div>
+  <div class="info-panel" id="info-panel">
+    <div class="info-default" id="info-default">
+      <span class="icon-big">🌱</span>
+      <h3>Исследуйте корень</h3>
+      <p>Нажмите на любую зону корня или на подпись справа, чтобы узнать подробнее.</p>
+      <p>Вращайте модель мышкой, приближайте колёсиком.</p>
+      <br>
+      <p style="color:#aaa;font-size:.78rem">🖱 ЛКМ — вращение<br>🖱 Колёсико — масштаб<br>🖱 ПКМ — перемещение</p>
+    </div>
+    <div id="info-content" style="display:none"></div>
+  </div>
+</section>
+
+<section class="lab-section" id="lab-section">
+  <h2>📝 Лабораторная работа №5 — Исследование зон корня</h2>
+
+  <div class="lab-card">
+    <h3><span class="num">1</span> Цель работы</h3>
+    <p>Изучить внешнее и внутреннее строение корня растения. Определить расположение, особенности и функции каждой зоны корня. Рассмотреть проводящие ткани корня и понять механизм транспортировки веществ.</p>
+  </div>
+  <div class="lab-card">
+    <h3><span class="num">2</span> Необходимое оборудование</h3>
+    <ul>
+      <li>Микроскоп (увеличение ×40 — ×400)</li>
+      <li>Готовые микропрепараты продольного и поперечного срезов корня</li>
+      <li>Проросшие семена пшеницы или фасоли (3–5 дней)</li>
+      <li>Лупа ручная (×5 — ×10)</li>
+      <li>Пинцет, предметные и покровные стёкла</li>
+      <li>Раствор йода или метиленового синего для окрашивания</li>
+      <li>Учебник биологии, тетрадь для записей</li>
+    </ul>
+  </div>
+  <div class="lab-card">
+    <h3><span class="num">3</span> Ход исследования</h3>
+    <ol>
+      <li><strong>Внешний осмотр:</strong> возьмите проросший корешок и рассмотрите его невооружённым глазом. Обратите внимание на различие окраски и толщины вдоль корня.</li>
+      <li><strong>Рассмотрение под лупой:</strong> найдите корневой чехлик на кончике, зону деления (более тёмная область), зону роста (светлая, гладкая), зону всасывания (с корневыми волосками) и зону проведения.</li>
+      <li><strong>Микроскопическое исследование:</strong> поместите микропрепарат продольного среза корня под микроскоп. Зарисуйте клетки каждой зоны и отметьте их форму и размер.</li>
+      <li><strong>Поперечный срез:</strong> рассмотрите поперечный срез корня. Найдите и зарисуйте расположение ксилемы, флоэмы и камбия.</li>
+      <li><strong>Интерактивное исследование:</strong> используя данную 3D-модель, изучите все зоны корня и его внутреннее строение. Нажимайте на каждую зону для получения информации.</li>
+    </ol>
+  </div>
+  <div class="lab-card">
+    <h3><span class="num">4</span> Наблюдения</h3>
+    <p>В ходе исследования должны быть обнаружены следующие особенности:</p>
+    <ul>
+      <li><strong>Корневой чехлик</strong> — плотная защитная ткань на самом кончике корня, предохраняющая зону деления.</li>
+      <li><strong>Зона деления</strong> — содержит мелкие, плотно расположенные клетки с крупными ядрами, активно делящиеся митозом.</li>
+      <li><strong>Зона роста</strong> — клетки вытянутой формы, значительно крупнее клеток зоны деления, вакуоли увеличены.</li>
+      <li><strong>Зона всасывания</strong> — характеризуется обилием корневых волосков — выростов клеток эпидермиса.</li>
+      <li><strong>Зона проведения</strong> — содержит хорошо развитые сосуды ксилемы и ситовидные трубки флоэмы.</li>
+      <li><strong>На поперечном срезе</strong> чётко различимы кора, эндодерма, перицикл, ксилема (звёздчатая форма) и флоэма.</li>
+    </ul>
+  </div>
+  <div class="lab-card">
+    <h3><span class="num">5</span> Вывод</h3>
+    <p>Корень имеет сложное зональное строение, каждая зона которого выполняет специфические функции. Зона деления обеспечивает образование новых клеток, зона роста — удлинение корня, зона всасывания — поглощение воды и минеральных солей, а зона проведения — транспорт веществ к стеблю.</p>
+    <p>Внутреннее строение корня включает проводящие ткани — ксилему и флоэму, которые обеспечивают двусторонний транспорт. Камбий обеспечивает рост корня в толщину.</p>
+  </div>
+</section>
+
+<section class="quiz-section" id="quiz-section">
+  <h2>🧪 Проверочный тест</h2>
+  <div class="quiz-card" id="q1">
+    <h4>1. Какая зона корня отвечает за поглощение воды и минеральных веществ из почвы?</h4>
+    <label><input type="radio" name="q1" value="a"> Зона проведения</label>
+    <label><input type="radio" name="q1" value="b"> Зона всасывания</label>
+    <label><input type="radio" name="q1" value="c"> Зона деления</label>
+    <label><input type="radio" name="q1" value="d"> Зона роста</label>
+  </div>
+  <div class="quiz-card" id="q2">
+    <h4>2. Что защищает кончик корня при продвижении в почве?</h4>
+    <label><input type="radio" name="q2" value="a"> Эпидермис</label>
+    <label><input type="radio" name="q2" value="b"> Камбий</label>
+    <label><input type="radio" name="q2" value="c"> Корневой чехлик</label>
+    <label><input type="radio" name="q2" value="d"> Кора корня</label>
+  </div>
+  <div class="quiz-card" id="q3">
+    <h4>3. Какая ткань переносит воду и минеральные вещества от корней вверх по растению?</h4>
+    <label><input type="radio" name="q3" value="a"> Флоэма</label>
+    <label><input type="radio" name="q3" value="b"> Камбий</label>
+    <label><input type="radio" name="q3" value="c"> Ксилема</label>
+    <label><input type="radio" name="q3" value="d"> Эпидермис</label>
+  </div>
+  <div class="quiz-card" id="q4">
+    <h4>4. За счёт какого процесса образуются новые клетки в зоне деления?</h4>
+    <label><input type="radio" name="q4" value="a"> Мейоз</label>
+    <label><input type="radio" name="q4" value="b"> Митоз</label>
+    <label><input type="radio" name="q4" value="c"> Амитоз</label>
+    <label><input type="radio" name="q4" value="d"> Почкование</label>
+  </div>
+  <div class="quiz-card" id="q5">
+    <h4>5. Какая ткань обеспечивает рост корня в толщину?</h4>
+    <label><input type="radio" name="q5" value="a"> Ксилема</label>
+    <label><input type="radio" name="q5" value="b"> Флоэма</label>
+    <label><input type="radio" name="q5" value="c"> Камбий</label>
+    <label><input type="radio" name="q5" value="d"> Эпидермис</label>
+  </div>
+  <button class="btn-check" id="btn-quiz">Проверить ответы</button>
+  <div class="quiz-result" id="quiz-result"></div>
+</section>
+
+<footer class="site-footer">
+  <p>Интерактивная виртуальная лаборатория по биологии · Исследование зон корня растения</p>
+</footer>
+
+<script>
+(function(){
+'use strict';
+
+/* ============ ZONE DATA ============ */
+const ZONE_DATA = {
+  conduction: {
+    name: 'Зона проведения', icon: '🔄', color: '#8d6e63',
+    desc: 'Зона проведения располагается в верхней части корня и является самой длинной зоной. Здесь корневые волоски уже отсутствуют, а клетки покрыты пробковой тканью.',
+    func: 'Транспортировка воды и минеральных веществ к стеблю растения',
+    details: ['Содержит развитые проводящие пучки (ксилему и флоэму)','Покрыта вторичной корой — пробковой тканью','От этой зоны отходят боковые корни','Обеспечивает механическую прочность корня']
+  },
+  absorption: {
+    name: 'Зона всасывания', icon: '💧', color: '#a1887f',
+    desc: 'Зона всасывания (зона корневых волосков) расположена над зоной роста. Главная особенность — множество тонких корневых волосков, которые значительно увеличивают площадь поверхности корня.',
+    func: 'Поглощение воды и минеральных веществ из почвы',
+    details: ['Корневые волоски — выросты клеток эпидермиса длиной 0,1–10 мм','Увеличивают площадь поверхности всасывания в 10–18 раз','Живут от нескольких дней до нескольких недель','Всасывание происходит за счёт осмоса']
+  },
+  growth: {
+    name: 'Зона роста (растяжения)', icon: '📏', color: '#c5a846',
+    desc: 'Зона роста (растяжения) расположена над зоной деления. Здесь клетки перестают делиться и начинают интенсивно расти, вытягиваясь вдоль оси корня.',
+    func: 'Удлинение корня за счёт растяжения клеток',
+    details: ['Клетки вытягиваются в 10–100 раз','В клетках образуются крупные вакуоли','Начинается дифференциация клеток на ткани','Обеспечивает продвижение кончика корня в почве']
+  },
+  division: {
+    name: 'Зона деления', icon: '🧬', color: '#558b2f',
+    desc: 'Зона деления расположена у самого кончика корня, прикрыта корневым чехликом. Состоит из мелких клеток образовательной ткани (меристемы), которые активно делятся путём митоза.',
+    func: 'Образование новых клеток благодаря непрерывному делению',
+    details: ['Клетки мелкие, с тонкими стенками и крупными ядрами','Деление происходит каждые 12–36 часов','Длина зоны — около 1 мм','Единственный источник новых клеток для роста корня']
+  },
+  cap: {
+    name: 'Корневой чехлик', icon: '🛡️', color: '#33691e',
+    desc: 'Корневой чехлик (калиптра) — многослойная защитная структура, покрывающая самый кончик корня. Состоит из живых, постоянно обновляющихся клеток.',
+    func: 'Защита зоны деления от механических повреждений',
+    details: ['Клетки наружных слоёв выделяют слизь, облегчающую продвижение корня','Постоянно обновляется: наружные клетки слущиваются','Содержит статолиты — крахмальные зёрна для восприятия силы тяжести','Обеспечивает геотропизм — рост корня вниз']
+  },
+  xylem: {
+    name: 'Ксилема (древесина)', icon: '⬆️', color: '#c62828',
+    desc: 'Ксилема — проводящая ткань, расположенная в центральной части корня. Состоит из мёртвых клеток (сосудов и трахеид) с одревесневшими стенками.',
+    func: 'Транспорт воды и минеральных веществ от корней вверх к стеблю и листьям',
+    details: ['Состоит из сосудов (трахей) и трахеид','Стенки клеток утолщены лигнином','Транспорт за счёт корневого давления и транспирации','На поперечном срезе имеет звёздчатую форму']
+  },
+  phloem: {
+    name: 'Флоэма (луб)', icon: '⬇️', color: '#1565c0',
+    desc: 'Флоэма — проводящая ткань, расположенная между лучами ксилемы. Состоит из живых клеток — ситовидных трубок с клетками-спутницами.',
+    func: 'Транспорт органических веществ (сахаров) от листьев ко всем частям растения',
+    details: ['Ситовидные трубки — живые клетки без ядра','Клетки-спутницы обеспечивают жизнедеятельность ситовидных трубок','Транспорт от источника (листья) к потребителям','Скорость транспорта — до 100 см/час']
+  },
+  cambium: {
+    name: 'Камбий', icon: '🔄', color: '#2e7d32',
+    desc: 'Камбий — тонкий слой образовательной ткани (меристемы), расположенный между ксилемой и флоэмой. Состоит из активно делящихся клеток.',
+    func: 'Образование новых клеток проводящих тканей и обеспечение роста корня в толщину',
+    details: ['Деление клеток камбия обеспечивает вторичный рост','Внутрь откладываются клетки вторичной ксилемы','Наружу — клетки вторичной флоэмы','У однодольных растений камбий обычно отсутствует']
+  }
+};
+
+/* ============ THREE.JS SETUP ============ */
+const container = document.getElementById('canvas-container');
+const tooltip = document.getElementById('tooltip');
+let W = container.clientWidth, H = container.clientHeight;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf7f5f0);
+scene.fog = new THREE.Fog(0xf7f5f0, 20, 40);
+
+const camera = new THREE.PerspectiveCamera(38, W/H, 0.1, 100);
+camera.position.set(0, 3, 12);
+
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+container.appendChild(renderer.domElement);
+
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.minDistance = 5;
+controls.maxDistance = 22;
+controls.target.set(0, 2, 0);
+controls.autoRotate = false;
+controls.autoRotateSpeed = 1.5;
+
+// Lighting
+scene.add(new THREE.AmbientLight(0xfff5e0, 0.5));
+const dir1 = new THREE.DirectionalLight(0xffffff, 0.75);
+dir1.position.set(6, 12, 8); dir1.castShadow = true;
+dir1.shadow.mapSize.set(1024,1024); scene.add(dir1);
+const dir2 = new THREE.DirectionalLight(0xfff8e1, 0.3);
+dir2.position.set(-5, 8, -6); scene.add(dir2);
+scene.add(new THREE.HemisphereLight(0xaed581, 0x795548, 0.3));
+
+/* ============ ROOT MODEL ============ */
+const rootGroup = new THREE.Group();
+scene.add(rootGroup);
+
+// Zone boundaries: y from -2 (tip) to 9 (top)
+// More conical/tapered shape. Wide at top, narrow at bottom, pointed tip.
+const ZONES = {
+  cap:        {yMin: -2.0, yMax: -1.2, color: 0x33691e},
+  division:   {yMin: -1.2, yMax:  0.5, color: 0x689f38},
+  growth:     {yMin:  0.5, yMax:  2.8, color: 0xcdba3a},
+  absorption: {yMin:  2.8, yMax:  6.0, color: 0xbcaaa4},
+  conduction: {yMin:  6.0, yMax:  9.5, color: 0x9c7a5a}
+};
+
+function getRadiusAtY(wy) {
+  // Strongly tapered conical shape — wide at top, narrow at bottom, pointed tip
+  if (wy < -1.7) {
+    // Tip: very rounded, like a paraboloid
+    const t = (wy - (-2.0)) / 0.3; // 0 at -2, 1 at -1.7
+    return 0.15 + 0.35 * Math.pow(Math.max(0, t), 0.5);
+  }
+  if (wy < -1.2) {
+    // Cap body
+    const t = (wy + 1.7) / 0.5;
+    return 0.5 + t * 0.15;
+  }
+  if (wy < 0.5) {
+    // Division zone — small
+    const t = (wy + 1.2) / 1.7;
+    return 0.65 + t * 0.12;
+  }
+  if (wy < 2.8) {
+    // Growth — widening
+    const t = (wy - 0.5) / 2.3;
+    return 0.77 + t * 0.2;
+  }
+  if (wy < 6.0) {
+    // Absorption — moderate
+    const t = (wy - 2.8) / 3.2;
+    return 0.97 + t * 0.15;
+  }
+  // Conduction — widest
+  const t = (wy - 6.0) / 3.5;
+  return 1.12 + t * 0.25;
+}
+
+function getZoneAtY(wy) {
+  if (wy < ZONES.cap.yMax) return 'cap';
+  if (wy < ZONES.division.yMax) return 'division';
+  if (wy < ZONES.growth.yMax) return 'growth';
+  if (wy < ZONES.absorption.yMax) return 'absorption';
+  return 'conduction';
+}
+
+function getColorAtY(wy) {
+  // Smooth blending between zone colors
+  const entries = Object.entries(ZONES);
+  for (let i = 0; i < entries.length; i++) {
+    const [, z] = entries[i];
+    if (wy >= z.yMin && wy < z.yMax) {
+      const c = new THREE.Color(z.color);
+      // Blend at boundaries
+      const margin = 0.3;
+      if (i < entries.length - 1) {
+        const distToTop = z.yMax - wy;
+        if (distToTop < margin) {
+          const nextColor = new THREE.Color(entries[i+1][1].color);
+          c.lerp(nextColor, 1 - distToTop / margin);
+        }
+      }
+      if (i > 0) {
+        const distToBot = wy - z.yMin;
+        if (distToBot < margin) {
+          const prevColor = new THREE.Color(entries[i-1][1].color);
+          c.lerp(prevColor, 1 - distToBot / margin);
+        }
+      }
+      return c;
+    }
+  }
+  return new THREE.Color(ZONES.conduction.color);
+}
+
+// Build root with LatheGeometry for a more natural tapered shape
+const PROFILE_POINTS = 120;
+const profilePoints = [];
+for (let i = 0; i <= PROFILE_POINTS; i++) {
+  const t = i / PROFILE_POINTS;
+  const wy = ZONES.cap.yMin + t * (ZONES.conduction.yMax - ZONES.cap.yMin);
+  const r = getRadiusAtY(wy);
+  profilePoints.push(new THREE.Vector2(r, wy));
+}
+
+const rootGeom = new THREE.LatheGeometry(profilePoints, 48);
+const posAttr = rootGeom.attributes.position;
+const colorArr = new Float32Array(posAttr.count * 3);
+
+for (let i = 0; i < posAttr.count; i++) {
+  const x = posAttr.getX(i);
+  const y = posAttr.getY(i);
+  const z = posAttr.getZ(i);
+  const angle = Math.atan2(z, x);
+
+  // Add organic bumps
+  const r0 = Math.sqrt(x*x + z*z) || 0.001;
+  const bump = 0.015 * Math.sin(angle*7 + y*4) + 0.01 * Math.sin(angle*13 + y*9) + 0.008 * Math.cos(angle*3 + y*15);
+  const newR = r0 + bump;
+  posAttr.setX(i, (x/r0) * newR);
+  posAttr.setZ(i, (z/r0) * newR);
+
+  const col = getColorAtY(y);
+  const cv = 0.02 * Math.sin(y*12 + angle*8);
+  colorArr[i*3]   = Math.min(1, Math.max(0, col.r + cv));
+  colorArr[i*3+1] = Math.min(1, Math.max(0, col.g + cv*0.5));
+  colorArr[i*3+2] = Math.min(1, Math.max(0, col.b + cv*0.3));
+}
+rootGeom.setAttribute('color', new THREE.BufferAttribute(colorArr, 3));
+rootGeom.computeVertexNormals();
+
+const rootMat = new THREE.MeshStandardMaterial({
+  vertexColors: true, roughness: 0.7, metalness: 0.03, side: THREE.DoubleSide
+});
+const rootMesh = new THREE.Mesh(rootGeom, rootMat);
+rootMesh.castShadow = true;
+rootGroup.add(rootMesh);
+
+/* ---- CELL TEXTURE OVERLAY ---- */
+(function addCells(){
+  // Horizontal cell rings
+  for (let wy = ZONES.cap.yMax; wy < ZONES.conduction.yMax - 0.2; wy += 0.15) {
+    const zone = getZoneAtY(wy);
+    let skip = false;
+    if (zone === 'division' && (Math.round(wy*100) % 15 !== 0)) skip = true;
+    if (zone === 'growth' && (Math.round(wy*100) % 40 !== 0)) skip = true;
+    if (zone === 'absorption' && (Math.round(wy*100) % 30 !== 0)) skip = true;
+    if (zone === 'conduction' && (Math.round(wy*100) % 30 !== 0)) skip = true;
+    if (skip) continue;
+
+    const rad = getRadiusAtY(wy) + 0.012;
+    const ringGeom = new THREE.TorusGeometry(rad, 0.005, 4, 48);
+    const ringMat = new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:0.06});
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.position.y = wy;
+    ring.rotation.x = Math.PI/2;
+    rootGroup.add(ring);
+  }
+  // Vertical lines
+  for (let a = 0; a < Math.PI*2; a += Math.PI*2/20) {
+    const pts = [];
+    for (let wy = ZONES.cap.yMax; wy < ZONES.conduction.yMax; wy += 0.2) {
+      const rad = getRadiusAtY(wy) + 0.013;
+      pts.push(new THREE.Vector3(Math.cos(a)*rad, wy, Math.sin(a)*rad));
+    }
+    const lg = new THREE.BufferGeometry().setFromPoints(pts);
+    const lm = new THREE.LineBasicMaterial({color:0x000000, transparent:true, opacity:0.04});
+    rootGroup.add(new THREE.Line(lg, lm));
+  }
+})();
+
+/* ---- ROOT HAIRS ---- */
+(function addHairs(){
+  const hairCount = 350;
+  for (let i = 0; i < hairCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const wy = ZONES.absorption.yMin + 0.1 + Math.random() * (ZONES.absorption.yMax - ZONES.absorption.yMin - 0.2);
+    const baseRad = getRadiusAtY(wy);
+    const hairLen = 0.25 + Math.random() * 0.6;
+
+    // Hair direction: mostly outward + slightly random
+    const outX = Math.cos(angle);
+    const outZ = Math.sin(angle);
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(outX * baseRad, wy, outZ * baseRad),
+      new THREE.Vector3(
+        outX * (baseRad + hairLen*0.55) + (Math.random()-0.5)*0.1,
+        wy + (Math.random()-0.5)*0.15,
+        outZ * (baseRad + hairLen*0.55) + (Math.random()-0.5)*0.1
+      ),
+      new THREE.Vector3(
+        outX * (baseRad + hairLen) + (Math.random()-0.5)*0.15,
+        wy + (Math.random()-0.5)*0.25 - 0.05,
+        outZ * (baseRad + hairLen) + (Math.random()-0.5)*0.15
+      )
+    );
+    const tubeGeom = new THREE.TubeGeometry(curve, 6, 0.008 + Math.random()*0.006, 4, false);
+    const tubeMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color().setHSL(0.08, 0.15, 0.7 + Math.random()*0.15),
+      roughness: 0.9, transparent: true, opacity: 0.6 + Math.random()*0.35
+    });
+    rootGroup.add(new THREE.Mesh(tubeGeom, tubeMat));
+  }
+})();
+
+/* ---- Zone separators (thin bright rings) ---- */
+[ZONES.cap.yMax, ZONES.division.yMax, ZONES.growth.yMax, ZONES.absorption.yMax].forEach(y => {
+  const rad = getRadiusAtY(y) + 0.02;
+  const rg = new THREE.TorusGeometry(rad, 0.012, 6, 48);
+  const rm = new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.5});
+  const ring = new THREE.Mesh(rg, rm);
+  ring.position.y = y; ring.rotation.x = Math.PI/2;
+  rootGroup.add(ring);
+});
+
+/* ---- Hit-test meshes (invisible cylinders for each zone) ---- */
+const zoneMeshes = [];
+function makeHitZone(key, z) {
+  const rTop = getRadiusAtY(z.yMax - 0.05) + 0.05;
+  const rBot = getRadiusAtY(z.yMin + 0.05) + 0.05;
+  const h = z.yMax - z.yMin;
+  const g = new THREE.CylinderGeometry(rTop, rBot, h, 24);
+  const m = new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false});
+  const mesh = new THREE.Mesh(g, m);
+  mesh.position.y = z.yMin + h/2;
+  mesh.userData.zone = key;
+  rootGroup.add(mesh);
+  zoneMeshes.push(mesh);
+}
+Object.entries(ZONES).forEach(([k,v]) => makeHitZone(k,v));
+
+/* Highlight overlay ring */
+const hlRing = new THREE.Mesh(
+  new THREE.TorusGeometry(1.3, 0.025, 8, 48),
+  new THREE.MeshBasicMaterial({color:0x4caf50, transparent:true, opacity:0})
+);
+hlRing.rotation.x = Math.PI/2;
+rootGroup.add(hlRing);
+
+let selectedZone = null;
+
+function highlightZone(key) {
+  // Reset all
+  zoneMeshes.forEach(m => { m.material.opacity = 0; });
+  document.querySelectorAll('.zone-html-label').forEach(el => el.style.outline='none');
+
+  if (!key) {
+    hlRing.material.opacity = 0;
+    selectedZone = null;
+    showDefaultInfo();
+    return;
+  }
+  selectedZone = key;
+  const z = ZONES[key];
+  // Glow overlay
+  zoneMeshes.forEach(m => {
+    if (m.userData.zone === key) {
+      m.material.color.set(0x66bb6a);
+      m.material.opacity = 0.13;
+    }
+  });
+  hlRing.position.y = z.yMin;
+  const r = getRadiusAtY(z.yMin) + 0.08;
+  hlRing.geometry.dispose();
+  hlRing.geometry = new THREE.TorusGeometry(r, 0.025, 8, 48);
+  hlRing.material.opacity = 0.8;
+
+  // Highlight HTML label
+  const lbl = document.querySelector(`.zone-html-label[data-zone="${key}"]`);
+  if (lbl) lbl.style.outline = '3px solid #4caf50';
+
+  showZoneInfo(key);
+}
+
+/* ============ CROSS SECTION ============ */
+const crossGroup = new THREE.Group();
+crossGroup.visible = false;
+scene.add(crossGroup);
+
+(function buildCross(){
+  // Outer cortex
+  const outerG = new THREE.CylinderGeometry(2.8, 2.8, 0.6, 48);
+  const outerM = new THREE.MeshStandardMaterial({color:0xd7ccc8, roughness:0.7});
+  crossGroup.add(new THREE.Mesh(outerG, outerM));
+
+  // Epidermis ring
+  const epiG = new THREE.TorusGeometry(2.8, 0.08, 8, 48);
+  const epiM = new THREE.MeshStandardMaterial({color:0xa1887f});
+  const epi = new THREE.Mesh(epiG, epiM);
+  epi.rotation.x = Math.PI/2; epi.position.y = 0.31;
+  crossGroup.add(epi);
+
+  // Endodermis
+  const endG = new THREE.TorusGeometry(1.8, 0.06, 8, 48);
+  const endM = new THREE.MeshStandardMaterial({color:0x8d6e63});
+  const endR = new THREE.Mesh(endG, endM);
+  endR.rotation.x = Math.PI/2; endR.position.y = 0.31;
+  crossGroup.add(endR);
+
+  // Stele
+  const stG = new THREE.CylinderGeometry(1.75, 1.75, 0.62, 48);
+  const stM = new THREE.MeshStandardMaterial({color:0xefebe9, roughness:0.6});
+  crossGroup.add(new THREE.Mesh(stG, stM));
+
+  // Xylem — star rays (red)
+  const xylemMat = new THREE.MeshStandardMaterial({color:0xc62828, roughness:0.5});
+  const xylemParts = [];
+  for (let i = 0; i < 4; i++) {
+    const a = (i/4)*Math.PI*2;
+    const rg = new THREE.CylinderGeometry(0.1, 0.2, 0.63, 8);
+    const rm = new THREE.Mesh(rg, xylemMat);
+    rm.position.set(Math.cos(a)*0.7, 0, Math.sin(a)*0.7);
+    rm.userData.zone = 'xylem';
+    crossGroup.add(rm); xylemParts.push(rm);
+
+    const ig = new THREE.CylinderGeometry(0.16, 0.16, 0.64, 8);
+    const im = new THREE.Mesh(ig, xylemMat);
+    im.position.set(Math.cos(a)*0.32, 0, Math.sin(a)*0.32);
+    im.userData.zone = 'xylem';
+    crossGroup.add(im); xylemParts.push(im);
+  }
+  const coreG = new THREE.CylinderGeometry(0.22, 0.22, 0.64, 12);
+  const coreM = new THREE.Mesh(coreG, xylemMat);
+  coreM.userData.zone = 'xylem';
+  crossGroup.add(coreM); xylemParts.push(coreM);
+
+  // Phloem — blue
+  const phlMat = new THREE.MeshStandardMaterial({color:0x1565c0, roughness:0.5});
+  const phlParts = [];
+  for (let i = 0; i < 4; i++) {
+    const a = ((i+0.5)/4)*Math.PI*2;
+    const pg = new THREE.CylinderGeometry(0.22, 0.22, 0.64, 12);
+    const pm = new THREE.Mesh(pg, phlMat);
+    pm.position.set(Math.cos(a)*0.9, 0, Math.sin(a)*0.9);
+    pm.userData.zone = 'phloem';
+    crossGroup.add(pm); phlParts.push(pm);
+
+    const sg = new THREE.CylinderGeometry(0.13, 0.13, 0.64, 8);
+    const sm = new THREE.Mesh(sg, phlMat);
+    sm.position.set(Math.cos(a)*1.2, 0, Math.sin(a)*1.2);
+    sm.userData.zone = 'phloem';
+    crossGroup.add(sm); phlParts.push(sm);
+  }
+
+  // Cambium ring
+  const cmbG = new THREE.TorusGeometry(1.35, 0.05, 8, 48);
+  const cmbM = new THREE.MeshStandardMaterial({color:0x2e7d32, roughness:0.5});
+  const cmb = new THREE.Mesh(cmbG, cmbM);
+  cmb.rotation.x = Math.PI/2; cmb.position.y = 0.31;
+  cmb.userData.zone = 'cambium';
+  crossGroup.add(cmb);
+
+  // Invisible cambium hit
+  const cmbHG = new THREE.TorusGeometry(1.35, 0.18, 8, 48);
+  const cmbHM = new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false});
+  const cmbH = new THREE.Mesh(cmbHG, cmbHM);
+  cmbH.rotation.x = Math.PI/2; cmbH.position.y = 0.31;
+  cmbH.userData.zone = 'cambium';
+  crossGroup.add(cmbH);
+
+  crossGroup.userData.clickable = [...xylemParts, ...phlParts, cmb, cmbH];
+
+  // Sprite labels
+  const labels = [
+    {text:'Ксилема',   color:'#c62828', x:0, y:2.3},
+    {text:'Флоэма',    color:'#1565c0', x:2.5, y:1.8},
+    {text:'Камбий',    color:'#2e7d32', x:-2.5, y:1.8},
+    {text:'Кора',      color:'#8d6e63', x:3, y:0},
+    {text:'Эпидермис', color:'#795548', x:-3, y:0},
+  ];
+  labels.forEach(l => {
+    const c = document.createElement('canvas');
+    c.width = 300; c.height = 64;
+    const ctx = c.getContext('2d');
+    ctx.font = 'bold 30px Segoe UI, sans-serif';
+    ctx.fillStyle = l.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(l.text, 150, 42);
+    const tex = new THREE.CanvasTexture(c);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true}));
+    sp.position.set(l.x, l.y, 0);
+    sp.scale.set(2.5, 0.53, 1);
+    crossGroup.add(sp);
+  });
+})();
+
+/* ============ INFO PANEL ============ */
+const infoDefault = document.getElementById('info-default');
+const infoContent = document.getElementById('info-content');
+
+function showDefaultInfo() {
+  infoDefault.style.display = '';
+  infoContent.style.display = 'none';
+  if (currentMode === 'inner') {
+    infoDefault.querySelector('h3').textContent = 'Внутреннее строение';
+    infoDefault.querySelector('p').textContent = 'Нажмите на ксилему, флоэму или камбий для подробностей.';
+  } else {
+    infoDefault.querySelector('h3').textContent = 'Исследуйте корень';
+    infoDefault.querySelector('p').textContent = 'Нажмите на любую зону корня или на подпись справа, чтобы узнать подробнее.';
+  }
+}
+
+function showZoneInfo(key) {
+  const d = ZONE_DATA[key]; if (!d) return;
+  infoDefault.style.display = 'none';
+  infoContent.style.display = '';
+  infoContent.innerHTML = `
+    <div class="zone-icon" style="background:${d.color}20">${d.icon}</div>
+    <h2>${d.name}</h2>
+    <span class="func-label">Функция</span>
+    <p><strong>${d.func}</strong></p>
+    <p>${d.desc}</p>
+    <ul class="detail-list">${d.details.map(x=>'<li>'+x+'</li>').join('')}</ul>
+  `;
+}
+
+/* ============ RAYCASTING ============ */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function getHitZone(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width)*2 - 1;
+  mouse.y = -((e.clientY - rect.top) / rect.height)*2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const targets = crossGroup.visible ? (crossGroup.userData.clickable || []) : zoneMeshes;
+  const hits = raycaster.intersectObjects(targets, true);
+  if (hits.length > 0) {
+    let zone = hits[0].object.userData.zone;
+    let obj = hits[0].object;
+    while (!zone && obj.parent) { obj = obj.parent; zone = obj.userData.zone; }
+    return zone;
+  }
+  return null;
+}
+
+renderer.domElement.addEventListener('mousemove', e => {
+  const zone = getHitZone(e);
+  if (zone && ZONE_DATA[zone]) {
+    tooltip.textContent = ZONE_DATA[zone].name;
+    tooltip.style.opacity = '1';
+    tooltip.style.left = (e.clientX - container.getBoundingClientRect().left + 15) + 'px';
+    tooltip.style.top = (e.clientY - container.getBoundingClientRect().top - 10) + 'px';
+    renderer.domElement.style.cursor = 'pointer';
+  } else {
+    tooltip.style.opacity = '0';
+    renderer.domElement.style.cursor = 'grab';
+  }
+});
+
+renderer.domElement.addEventListener('click', e => {
+  if (e.target.closest('.controls-overlay') || e.target.closest('.mode-toggle') || e.target.closest('.zone-html-labels')) return;
+  const zone = getHitZone(e);
+  if (zone) {
+    if (crossGroup.visible) { showZoneInfo(zone); }
+    else { selectedZone === zone ? highlightZone(null) : highlightZone(zone); }
+  } else if (!crossGroup.visible) {
+    highlightZone(null);
+  }
+});
+
+/* ---- HTML label clicks ---- */
+document.querySelectorAll('.zone-html-label').forEach(el => {
+  el.addEventListener('click', () => {
+    const z = el.dataset.zone;
+    if (z) { selectedZone === z ? highlightZone(null) : highlightZone(z); }
+  });
+});
+
+/* ============ MODE SWITCH ============ */
+let currentMode = 'outer';
+const modeOuter = document.getElementById('mode-outer');
+const modeInner = document.getElementById('mode-inner');
+const labelsContainer = document.getElementById('zone-labels-container');
+
+modeOuter.addEventListener('click', () => {
+  if (currentMode === 'outer') return;
+  currentMode = 'outer';
+  modeOuter.classList.add('active'); modeInner.classList.remove('active');
+  crossGroup.visible = false; rootGroup.visible = true;
+  labelsContainer.style.display = '';
+  controls.target.set(0, 2, 0);
+  highlightZone(null);
+  animCam(0, 3, 12);
+});
+
+modeInner.addEventListener('click', () => {
+  if (currentMode === 'inner') return;
+  currentMode = 'inner';
+  modeInner.classList.add('active'); modeOuter.classList.remove('active');
+  rootGroup.visible = false; crossGroup.visible = true;
+  labelsContainer.style.display = 'none';
+  controls.target.set(0, 0, 0);
+  highlightZone(null);
+  showDefaultInfo();
+  animCam(0, 6, 6);
+});
+
+function animCam(x,y,z) {
+  const s = {x:camera.position.x, y:camera.position.y, z:camera.position.z};
+  const t0 = performance.now();
+  (function step(t){
+    const p = Math.min(1, (t-t0)/800);
+    const e = 1 - Math.pow(1-p, 3);
+    camera.position.set(s.x+(x-s.x)*e, s.y+(y-s.y)*e, s.z+(z-s.z)*e);
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ============ CONTROLS ============ */
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (currentMode === 'outer') { animCam(0,3,12); controls.target.set(0,2,0); }
+  else { animCam(0,6,6); controls.target.set(0,0,0); }
+  highlightZone(null);
+});
+const btnAuto = document.getElementById('btn-auto');
+btnAuto.addEventListener('click', () => {
+  controls.autoRotate = !controls.autoRotate;
+  btnAuto.classList.toggle('active', controls.autoRotate);
+});
+
+/* ============ QUIZ ============ */
+const ANS = {q1:'b', q2:'c', q3:'c', q4:'b', q5:'c'};
+document.getElementById('btn-quiz').addEventListener('click', () => {
+  let score = 0;
+  for (let i = 1; i <= 5; i++) {
+    const card = document.getElementById('q'+i);
+    const sel = document.querySelector(`input[name=q${i}]:checked`);
+    card.classList.remove('correct','wrong');
+    if (sel && sel.value === ANS['q'+i]) { card.classList.add('correct'); score++; }
+    else card.classList.add('wrong');
+  }
+  const r = document.getElementById('quiz-result');
+  if (score===5) r.innerHTML='<p>🎉 Отлично! Все ответы верные!</p>';
+  else if (score>=4) r.innerHTML=`<p>👍 Хороший результат: ${score} из 5</p>`;
+  else if (score>=3) r.innerHTML=`<p>📚 Неплохо: ${score} из 5. Повторите материал.</p>`;
+  else r.innerHTML=`<p>📖 Результат: ${score} из 5. Изучите модель ещё раз.</p>`;
+});
+
+/* ============ ANIMATION LOOP ============ */
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  if (selectedZone) {
+    hlRing.material.opacity = 0.45 + 0.35 * Math.sin(performance.now()*0.004);
+  }
+  renderer.render(scene, camera);
+}
+animate();
+
+/* ============ RESIZE ============ */
+function onResize(){
+  W = container.clientWidth; H = container.clientHeight;
+  camera.aspect = W/H; camera.updateProjectionMatrix();
+  renderer.setSize(W, H);
+}
+window.addEventListener('resize', onResize);
+setTimeout(onResize, 100);
+
+})();
+</script>
+</body>
+</html>
